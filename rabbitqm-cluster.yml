@@ -1,0 +1,66 @@
+---
+- name: Deploy RabbitMQ HA Cluster
+  hosts: all
+  become: yes
+  vars:
+    rabbitmq_cluster_nodes: "{{ groups['rabbitmq'] | map('extract', hostvars, ['ansible_host']) | list }}"
+    rabbitmq_erlang_cookie: "SECRET_CLUSTER_COOKIE"
+  
+  tasks:
+    - name: Install RabbitMQ
+      apt:
+        name: rabbitmq-server
+        state: present
+        update_cache: yes
+      when: ansible_os_family == "Debian"
+    
+    - name: Enable management plugin
+      command: rabbitmq-plugins enable rabbitmq_management
+      notify: restart rabbitmq
+    
+    - name: Configure Erlang cookie
+      copy:
+        content: "{{ rabbitmq_erlang_cookie }}"
+        dest: /var/lib/rabbitmq/.erlang.cookie
+        owner: rabbitmq
+        group: rabbitmq
+        mode: '0400'
+      notify: restart rabbitmq
+    
+    - name: Start RabbitMQ service
+      systemd:
+        name: rabbitmq-server
+        state: started
+        enabled: yes
+    
+    - name: Create admin user
+      command: "rabbitmqctl add_user admin password"
+      ignore_errors: yes
+    
+    - name: Set admin permissions
+      command: "rabbitmqctl set_user_tags admin administrator"
+    
+    - name: Set admin permissions
+      command: "rabbitmqctl set_permissions -p / admin '.*' '.*' '.*'"
+  
+  handlers:
+    - name: restart rabbitmq
+      systemd:
+        name: rabbitmq-server
+        state: restarted
+
+- name: Configure RabbitMQ cluster
+  hosts: rabbitmq
+  become: yes
+  tasks:
+    - name: Join cluster with first node
+      command: >
+        rabbitmqctl stop_app &&
+        rabbitmqctl reset &&
+        rabbitmqctl join_cluster rabbit@{{ groups['rabbitmq'][0] }} &&
+        rabbitmqctl start_app
+      when: inventory_hostname != groups['rabbitmq'][0]
+    
+    - name: Set HA policy
+      command: rabbitmqctl set_policy ha-all ".*" '{"ha-mode":"all"}'
+      when: inventory_hostname == groups['rabbitmq'][0]
