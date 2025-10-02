@@ -1,154 +1,97 @@
-# Домашнее задание к занятию  «Очереди RabbitMQ» студента Аль-Ассафа Ильи
-
-### Задание 1. Установка RabbitMQ
-
-Используя Vagrant или VirtualBox, создайте виртуальную машину и установите RabbitMQ.
-Добавьте management plug-in и зайдите в веб-интерфейс.
-
-*Итогом выполнения домашнего задания будет приложенный скриншот веб-интерфейса RabbitMQ.*
-![Скриншот](https://github.com/LoreQ3/sys-pattern-homework/blob/main/img/img1.png)
+# Домашнее задание к занятию «Работа с данными (DDL/DML) студента Аль-Ассафа Ильи»
 
 ---
 
-### Задание 2. Отправка и получение сообщений
+Задание можно выполнить как в любом IDE, так и в командной строке.
 
-Используя приложенные скрипты, проведите тестовую отправку и получение сообщения.
-Для отправки сообщений необходимо запустить скрипт producer.py.
+### Задание 1
+1.1. Поднимите чистый инстанс MySQL версии 8.0+. Можно использовать локальный сервер или контейнер Docker.
 
-Для работы скриптов вам необходимо установить Python версии 3 и библиотеку Pika.
-Также в скриптах нужно указать IP-адрес машины, на которой запущен RabbitMQ, заменив localhost на нужный IP.
+1.2. Создайте учётную запись sys_temp. 
 
-```shell script
-$ pip install pika
-```
+1.3. Выполните запрос на получение списка пользователей в базе данных. (скриншот)
 
-Зайдите в веб-интерфейс, найдите очередь под названием hello и сделайте скриншот.
-После чего запустите второй скрипт consumer.py и сделайте скриншот результата выполнения скрипта
+![Скриншот](https://github.com/LoreQ3/sys-pattern-homework/blob/main/img/img1.png)
 
-*В качестве решения домашнего задания приложите оба скриншота, сделанных на этапе выполнения.*
+1.4. Дайте все права для пользователя sys_temp. 
 
-Для закрепления материала можете попробовать модифицировать скрипты, чтобы поменять название очереди и отправляемое сообщение.
+1.5. Выполните запрос на получение списка прав для пользователя sys_temp. (скриншот)
 
 ![Скриншот](https://github.com/LoreQ3/sys-pattern-homework/blob/main/img/img2.png)
+
+1.6. Переподключитесь к базе данных от имени sys_temp.
+
+Для смены типа аутентификации с sha2 используйте запрос: 
+```sql
+ALTER USER 'sys_test'@'localhost' IDENTIFIED WITH mysql_native_password BY 'password';
+```
+1.6. По ссылке https://downloads.mysql.com/docs/sakila-db.zip скачайте дамп базы данных.
+
+1.7. Восстановите дамп в базу данных.
+
+1.8. При работе в IDE сформируйте ER-диаграмму получившейся базы данных. При работе в командной строке используйте команду для получения всех таблиц базы данных. (скриншот)
+
 ![Скриншот](https://github.com/LoreQ3/sys-pattern-homework/blob/main/img/img3.png)
-![Скриншот](https://github.com/LoreQ3/sys-pattern-homework/blob/main/img/img4.png)
 
----
+*Результатом работы должны быть скриншоты обозначенных заданий, а также простыня со всеми запросами.*
 
-### Задание 3. Подготовка HA кластера
+```sql
+-- 1.2. Создание учётной записи sys_temp
+CREATE USER 'sys_temp'@'127.0.0.1' IDENTIFIED BY 'password';
 
-Используя Vagrant или VirtualBox, создайте вторую виртуальную машину и установите RabbitMQ.
-Добавьте в файл hosts название и IP-адрес каждой машины, чтобы машины могли видеть друг друга по имени.
+-- 1.3. Получение списка пользователей
+SELECT user, host, authentication_string FROM mysql.user;
 
-Пример содержимого hosts файла:
-```shell script
-$ cat /etc/hosts
-192.168.0.10 rmq01
-192.168.0.11 rmq02
-```
-После этого ваши машины могут пинговаться по имени.
+-- 1.4. Выдача всех прав пользователю sys_temp
+GRANT ALL PRIVILEGES ON *.* TO 'sys_temp'@'127.0.0.1';
 
-Затем объедините две машины в кластер и создайте политику ha-all на все очереди.
+-- 1.5. Получение списка прав для пользователя sys_temp
+SHOW GRANTS FOR 'sys_temp'@'127.0.0.1';
 
-*В качестве решения домашнего задания приложите скриншоты из веб-интерфейса с информацией о доступных нодах в кластере и включённой политикой.*
-![Скриншот](https://github.com/LoreQ3/sys-pattern-homework/blob/main/img/img1.png)
-
-Также приложите вывод команды с двух нод:
-
-```shell script
-$ rabbitmqctl cluster_status
 ```
 
-Для закрепления материала снова запустите скрипт producer.py и приложите скриншот выполнения команды на каждой из нод:
 
-```shell script
-$ rabbitmqadmin get queue='hello'
+### Задание 2
+Составьте таблицу, используя любой текстовый редактор или Excel, в которой должно быть два столбца: в первом должны быть названия таблиц восстановленной базы, во втором названия первичных ключей этих таблиц. Пример: (скриншот/текст)
 ```
+# Таблица первичных ключей базы Sakila
 
-После чего попробуйте отключить одну из нод, желательно ту, к которой подключались из скрипта, затем поправьте параметры подключения в скрипте consumer.py на вторую ноду и запустите его.
-
-*Приложите скриншот результата работы второго скрипта.*
-![Скриншот](https://github.com/LoreQ3/sys-pattern-homework/blob/main/img/img5.png)
-![Скриншот](https://github.com/LoreQ3/sys-pattern-homework/blob/main/img/img6.png)
-![Скриншот](https://github.com/LoreQ3/sys-pattern-homework/blob/main/img/img7.png)
-![Скриншот](https://github.com/LoreQ3/sys-pattern-homework/blob/main/img/img8.png)
+| Название таблицы | Название первичного ключа |
+|------------------|---------------------------|
+| actor            | actor_id                  |
+| address          | address_id                |
+| category         | category_id               |
+| city             | city_id                   |
+| country          | country_id                |
+| customer         | customer_id               |
+| film             | film_id                   |
+| film_actor       | actor_id, film_id         |
+| film_category    | film_id, category_id      |
+| film_text        | film_id                   |
+| inventory        | inventory_id              |
+| language         | language_id               |
+| payment          | payment_id                |
+| rental           | rental_id                 |
+| staff            | staff_id                  |
+| store            | store_id                  |
+```
 
 ## Дополнительные задания (со звёздочкой*)
 Эти задания дополнительные, то есть не обязательные к выполнению, и никак не повлияют на получение вами зачёта по этому домашнему заданию. Вы можете их выполнить, если хотите глубже шире разобраться в материале.
 
-### * Задание 4. Ansible playbook
+### Задание 3*
+3.1. Уберите у пользователя sys_temp права на внесение, изменение и удаление данных из базы sakila.
 
-Напишите плейбук, который будет производить установку RabbitMQ на любое количество нод и объединять их в кластер.
-При этом будет автоматически создавать политику ha-all.
+3.2. Выполните запрос на получение списка прав для пользователя sys_temp. (скриншот)
 
-*Готовый плейбук разместите в своём репозитории.*
+![Скриншот](https://github.com/LoreQ3/sys-pattern-homework/blob/main/img/img4.png)
 
-```hcl
----
-- name: Deploy RabbitMQ HA Cluster
-  hosts: all
-  become: yes
-  vars:
-    rabbitmq_cluster_nodes: "{{ groups['rabbitmq'] | map('extract', hostvars, ['ansible_host']) | list }}"
-    rabbitmq_erlang_cookie: "SECRET_CLUSTER_COOKIE"
-  
-  tasks:
-    - name: Install RabbitMQ
-      apt:
-        name: rabbitmq-server
-        state: present
-        update_cache: yes
-      when: ansible_os_family == "Debian"
-    
-    - name: Enable management plugin
-      command: rabbitmq-plugins enable rabbitmq_management
-      notify: restart rabbitmq
-    
-    - name: Configure Erlang cookie
-      copy:
-        content: "{{ rabbitmq_erlang_cookie }}"
-        dest: /var/lib/rabbitmq/.erlang.cookie
-        owner: rabbitmq
-        group: rabbitmq
-        mode: '0400'
-      notify: restart rabbitmq
-    
-    - name: Start RabbitMQ service
-      systemd:
-        name: rabbitmq-server
-        state: started
-        enabled: yes
-    
-    - name: Create admin user
-      command: "rabbitmqctl add_user admin password"
-      ignore_errors: yes
-    
-    - name: Set admin permissions
-      command: "rabbitmqctl set_user_tags admin administrator"
-    
-    - name: Set admin permissions
-      command: "rabbitmqctl set_permissions -p / admin '.*' '.*' '.*'"
-  
-  handlers:
-    - name: restart rabbitmq
-      systemd:
-        name: rabbitmq-server
-        state: restarted
+*Результатом работы должны быть скриншоты обозначенных заданий, а также простыня со всеми запросами.*
 
-- name: Configure RabbitMQ cluster
-  hosts: rabbitmq
-  become: yes
-  tasks:
-    - name: Join cluster with first node
-      command: >
-        rabbitmqctl stop_app &&
-        rabbitmqctl reset &&
-        rabbitmqctl join_cluster rabbit@{{ groups['rabbitmq'][0] }} &&
-        rabbitmqctl start_app
-      when: inventory_hostname != groups['rabbitmq'][0]
-    
-    - name: Set HA policy
-      command: rabbitmqctl set_policy ha-all ".*" '{"ha-mode":"all"}'
-      when: inventory_hostname == groups['rabbitmq'][0]
+```sql
+-- 3.1  Удаление у пользователя sys_temp права на внесение, изменение и удаление данных из базы sakila.
+REVOKE INSERT, UPDATE, DELETE ON sakila.* FROM 'sys_temp'@'127.0.0.1';
 
+-- 3.2 Получение списка прав для пользователя sys_temp
+SHOW GRANTS FOR 'sys_temp'@'127.0.0.1';
 ```
