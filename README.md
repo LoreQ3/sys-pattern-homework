@@ -1,97 +1,83 @@
-# Домашнее задание к занятию «Работа с данными (DDL/DML) студента Аль-Ассафа Ильи»
+# Домашнее задание к занятию "Расширенные возможности SQL" студента Аль-Ассафа Ильи»
 
 ---
 
 Задание можно выполнить как в любом IDE, так и в командной строке.
 
 ### Задание 1
-1.1. Поднимите чистый инстанс MySQL версии 8.0+. Можно использовать локальный сервер или контейнер Docker.
 
-1.2. Создайте учётную запись sys_temp. 
-
-1.3. Выполните запрос на получение списка пользователей в базе данных. (скриншот)
-
-![Скриншот](https://github.com/LoreQ3/sys-pattern-homework/blob/main/img/img1.png)
-
-1.4. Дайте все права для пользователя sys_temp. 
-
-1.5. Выполните запрос на получение списка прав для пользователя sys_temp. (скриншот)
-
-![Скриншот](https://github.com/LoreQ3/sys-pattern-homework/blob/main/img/img2.png)
-
-1.6. Переподключитесь к базе данных от имени sys_temp.
-
-Для смены типа аутентификации с sha2 используйте запрос: 
-```sql
-ALTER USER 'sys_test'@'localhost' IDENTIFIED WITH mysql_native_password BY 'password';
-```
-1.6. По ссылке https://downloads.mysql.com/docs/sakila-db.zip скачайте дамп базы данных.
-
-1.7. Восстановите дамп в базу данных.
-
-1.8. При работе в IDE сформируйте ER-диаграмму получившейся базы данных. При работе в командной строке используйте команду для получения всех таблиц базы данных. (скриншот)
-
-![Скриншот](https://github.com/LoreQ3/sys-pattern-homework/blob/main/img/img3.png)
-
-*Результатом работы должны быть скриншоты обозначенных заданий, а также простыня со всеми запросами.*
+Одним запросом получите информацию о магазине, в котором обслуживается более 300 покупателей, и выведите в результат следующую информацию: 
+- фамилия и имя сотрудника из этого магазина;
+- город нахождения магазина;
+- количество пользователей, закреплённых в этом магазине.
 
 ```sql
--- 1.2. Создание учётной записи sys_temp
-CREATE USER 'sys_temp'@'127.0.0.1' IDENTIFIED BY 'password';
-
--- 1.3. Получение списка пользователей
-SELECT user, host, authentication_string FROM mysql.user;
-
--- 1.4. Выдача всех прав пользователю sys_temp
-GRANT ALL PRIVILEGES ON *.* TO 'sys_temp'@'127.0.0.1';
-
--- 1.5. Получение списка прав для пользователя sys_temp
-SHOW GRANTS FOR 'sys_temp'@'127.0.0.1';
-
+SELECT 
+    CONCAT(staff.first_name, ' ', staff.last_name) AS staff_name,
+    city.city AS store_city,
+    COUNT(customer.customer_id) AS customer_count
+FROM store
+    INNER JOIN staff ON store.manager_staff_id = staff.staff_id
+    INNER JOIN address ON store.address_id = address.address_id
+    INNER JOIN city ON address.city_id = city.city_id
+    INNER JOIN customer ON store.store_id = customer.store_id
+GROUP BY 
+    store.store_id, 
+    staff.first_name, 
+    staff.last_name, 
+    city.city
+HAVING COUNT(customer.customer_id) > 300;
 ```
-
 
 ### Задание 2
-Составьте таблицу, используя любой текстовый редактор или Excel, в которой должно быть два столбца: в первом должны быть названия таблиц восстановленной базы, во втором названия первичных ключей этих таблиц. Пример: (скриншот/текст)
-```
-# Таблица первичных ключей базы Sakila
 
-| Название таблицы | Название первичного ключа |
-|------------------|---------------------------|
-| actor            | actor_id                  |
-| address          | address_id                |
-| category         | category_id               |
-| city             | city_id                   |
-| country          | country_id                |
-| customer         | customer_id               |
-| film             | film_id                   |
-| film_actor       | actor_id, film_id         |
-| film_category    | film_id, category_id      |
-| film_text        | film_id                   |
-| inventory        | inventory_id              |
-| language         | language_id               |
-| payment          | payment_id                |
-| rental           | rental_id                 |
-| staff            | staff_id                  |
-| store            | store_id                  |
+Получите количество фильмов, продолжительность которых больше средней продолжительности всех фильмов.
+
+```sql
+SELECT COUNT(*) AS films_above_average
+FROM film
+WHERE length > (SELECT AVG(length) FROM film);
+```
+
+### Задание 3
+
+Получите информацию, за какой месяц была получена наибольшая сумма платежей, и добавьте информацию по количеству аренд за этот месяц.
+
+```sql
+USE sakila;
+SELECT 
+    DATE_FORMAT(payment_date, '%Y-%m') AS payment_month,
+    SUM(amount) AS total_amount,
+    COUNT(rental_id) AS rental_count
+FROM payment
+GROUP BY DATE_FORMAT(payment_date, '%Y-%m')
+ORDER BY total_amount DESC
+LIMIT 1;
 ```
 
 ## Дополнительные задания (со звёздочкой*)
 Эти задания дополнительные, то есть не обязательные к выполнению, и никак не повлияют на получение вами зачёта по этому домашнему заданию. Вы можете их выполнить, если хотите глубже шире разобраться в материале.
 
-### Задание 3*
-3.1. Уберите у пользователя sys_temp права на внесение, изменение и удаление данных из базы sakila.
+### Задание 4*
 
-3.2. Выполните запрос на получение списка прав для пользователя sys_temp. (скриншот)
+Посчитайте количество продаж, выполненных каждым продавцом. Добавьте вычисляемую колонку «Премия». Если количество продаж превышает 8000, то значение в колонке будет «Да», иначе должно быть значение «Нет».
 
-![Скриншот](https://github.com/LoreQ3/sys-pattern-homework/blob/main/img/img4.png)
+### Задание 5*
 
-*Результатом работы должны быть скриншоты обозначенных заданий, а также простыня со всеми запросами.*
+Найдите фильмы, которые ни разу не брали в аренду.
 
 ```sql
--- 3.1  Удаление у пользователя sys_temp права на внесение, изменение и удаление данных из базы sakila.
-REVOKE INSERT, UPDATE, DELETE ON sakila.* FROM 'sys_temp'@'127.0.0.1';
-
--- 3.2 Получение списка прав для пользователя sys_temp
-SHOW GRANTS FOR 'sys_temp'@'127.0.0.1';
+USE sakila;
+SELECT 
+    f.film_id,
+    f.title,
+    f.release_year,
+    f.length,
+    f.rating,
+    f.rental_rate
+FROM film f
+LEFT JOIN inventory i ON f.film_id = i.film_id
+LEFT JOIN rental r ON i.inventory_id = r.inventory_id
+WHERE r.rental_id IS NULL
+ORDER BY f.title;
 ```
